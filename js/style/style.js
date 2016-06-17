@@ -766,3 +766,4 @@ Style.prototype = util.inherit(Evented, {
         }
     }
 });
+
