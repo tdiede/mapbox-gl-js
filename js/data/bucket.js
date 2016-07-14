@@ -209,6 +209,42 @@ Bucket.prototype.prepareArrayGroup = function(programName, numVertices) {
 };
 
 /**
+ * Sets the underlying `arrayBuffer` instances for this bucket's array groups.
+ * When the arrayBuffers are transferred across threads with postMessage, the
+ * references to them on the sending thread become "neutered". This method
+ * allows for those arrayBuffers to be sent _back_ to the worker they came
+ * from.
+ *
+ * @private
+ * @param {object} arrayGroups object mapping program name to [group0, group1, ...], where groupX is an array group structure as produced in Bucket#prepareArrayGroup.
+ */
+Bucket.prototype.setArrayGroupData = function (arrayGroups) {
+    for (var program in arrayGroups) {
+        var newGroups = arrayGroups[program];
+        for (var g = 0; g < newGroups.length; g++) {
+            var group = this.arrayGroups[program][g];
+            var newGroup = newGroups[g];
+            if (group.layoutVertexArray) {
+                group.layoutVertexArray.arrayBuffer = newGroup.layoutVertexArray.arrayBuffer;
+                group.layoutVertexArray._refreshViews();
+            }
+            if (group.elementArray) {
+                group.elementArray.arrayBuffer = newGroup.elementArray.arrayBuffer;
+                group.elementArray._refreshViews();
+            }
+            if (group.elementArray2) {
+                group.elementArray2.arrayBuffer = newGroup.elementArray2.arrayBuffer;
+                group.elementArray2._refreshViews();
+            }
+            for (var layer in group.paintVertexArrays) {
+                group.paintVertexArrays[layer].arrayBuffer = newGroup.paintVertexArrays[layer].arrayBuffer;
+                group.paintVertexArrays[layer]._refreshViews();
+            }
+        }
+    }
+};
+
+/**
  * Sets up `this.paintVertexArrayTypes` as { [programName]: { [layerName]: PaintArrayType, ... }, ... }
  *
  * And `this.arrayGroups` as { [programName]: [], ... }; these get populated

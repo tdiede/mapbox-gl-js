@@ -248,15 +248,27 @@ WorkerTile.prototype.parse = function(data, layerFamilies, actor, rawTileData, c
 // }
 // where feature 0, 1, 2 are the features, in order, in this vector tile.
 
-WorkerTile.prototype.updateProperties = function(data, layerFamilies, actor, rawTileData, callback) {
+WorkerTile.prototype.updateProperties = function(data, layerFamilies, actor, arrayGroupData, callback) {
     // load up data cached from initial parse()
     var buckets = this.buckets,
         otherBuckets = this.otherBuckets;
 
     var tile = this;
 
+    var i;
+
+    // pull in fresh `arrayBuffer` references, effectively "un-neutering" ours
+    // (which would have been neutered when we transferred them back to the
+    // main thread in the initial tile load)
+    for (i = 0; i < buckets.length; i++) {
+        var bucket = buckets[i];
+        var arrayGroups = arrayGroupData[bucket.id];
+        if (!arrayGroups) continue;
+        bucket.setArrayGroupData(arrayGroups);
+    }
+
     // immediately parse non-symbol buckets (they have no dependencies)
-    for (var i = otherBuckets.length - 1; i >= 0; i--) {
+    for (i = otherBuckets.length - 1; i >= 0; i--) {
         if (!otherBuckets[i].updateFeatureProperties) continue;
         var properties = data[otherBuckets[i].layer.sourceLayer];
         otherBuckets[i].updateFeatureProperties(properties || []);
